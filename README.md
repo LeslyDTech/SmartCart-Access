@@ -48,7 +48,7 @@ SmartCart Access creates a frictionless, secure loop between the front door, the
 6. Trigger a simulated event using the Ring Simulator to test the workflow.
 ## Product Feedback & Friction Logs
  
-*We are aiming for the 10% judging bonus! Notes on onboarding, API usage, and tools are logged below.*
+*I am are aiming for the 10% judging bonus! Notes on onboarding, API usage, and tools are logged below.*
  
 ### Log 1: [Tool/API Name — e.g., Ring API Authentication]
  
