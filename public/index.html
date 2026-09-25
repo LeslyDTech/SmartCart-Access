@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SmartCart Access — Alexa+ Agent</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #2a2e38;
+    --accent: #00c2a8;
+    --accent-dim: #0a8f7d;
+    --text: #e8eaf0;
+    --text-dim: #9aa1ae;
+    --bubble-user: #232838;
+    --bubble-bot: #131722;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .app {
+    width: 100%;
+    max-width: 560px;
+    height: 90vh;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+  }
+  header span {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: block;
+  }
+  
+  /* Dark Mode Door Lock Visual */
+  #door-status-container { 
+    padding: 12px; 
+    text-align: center; 
+    background: var(--panel); 
+    border-bottom: 1px solid var(--border); 
+  }
+  .door-badge { 
+    display: inline-block; 
+    padding: 6px 14px; 
+    font-weight: 600; 
+    font-size: 12px;
+    border-radius: 6px; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+    transition: all 0.3s ease; 
+  }
+  .locked { 
+    background-color: #2a1414; 
+    color: #ff9d9d; 
+    border: 1px solid #5c2323; 
+  }
+  .unlocked { 
+    background-color: #113622; 
+    color: #8cf2b1; 
+    border: 1px solid #1a5c36; 
+  }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .msg {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: var(--bubble-user);
+    border-bottom-right-radius: 4px;
+  }
+  .msg.bot {
+    align-self: flex-start;
+    background: var(--bubble-bot);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .msg.tool {
+    align-self: flex-start;
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--text-dim);
+    font-size: 12px;
+    font-family: "SF Mono", Menlo, monospace;
+  }
+  .msg.error {
+    align-self: flex-start;
+    background: #2a1414;
+    border: 1px solid #5c2323;
+    color: #ff9d9d;
+  }
+  form {
+    display: flex;
+    gap: 8px;
+    padding: 14px;
+    border-top: 1px solid var(--border);
+  }
+  input {
+    flex: 1;
+    background: #0c0e13;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 14px;
+    outline: none;
+  }
+  input:focus { border-color: var(--accent-dim); }
+  button {
+    background: var(--accent);
+    color: #06110f;
+    border: none;
+    border-radius: 8px;
+    padding: 0 18px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .typing {
+    align-self: flex-start;
+    color: var(--text-dim);
+    font-size: 12px;
+    padding-left: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="dot"></div>
+    <div>
+      <h1>SmartCart Access</h1>
+      <span>Alexa+ Agent · connected to local MCP server</span>
+    </div>
+  </header>
+
+  <div id="door-status-container">
+    <span id="door-indicator" class="door-badge locked">🔒 Door: Locked</span>
+  </div>
+
+  <div id="messages"></div>
+
+  <form id="chat-form">
+    <input
+      id="chat-input"
+      type="text"
+      autocomplete="off"
+      placeholder='e.g. "A delivery driver with ID DRV-8829 is here, can you unlock the door?"'
+    />
+    <button id="send-btn" type="submit">Send</button>
+  </form>
+
+  <div id="action-panel" style="display: none; padding: 14px; border-top: 1px solid var(--border); background: var(--panel); text-align: center;">
+    <button id="confirm-btn" style="width: 100%; background: #12a14b; color: white; padding: 12px; font-size: 15px;">Confirm if you want to proceed to unlock the door</button>
+  </div>
+</div>
+
+<script>
+  const messagesEl = document.getElementById('messages');
+  const formEl = document.getElementById('chat-form');
+  const inputEl = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('send-btn');
+  const confirmBtn = document.getElementById('confirm-btn');
+  const actionPanel = document.getElementById('action-panel');
+
+  let history = [];
+
+  function addMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return div;
+  }
+
+  function addTyping() {
+    const div = document.createElement('div');
+    div.className = 'typing';
+    div.textContent = 'SmartCart Agent is thinking…';
+    div.id = 'typing-indicator';
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  formEl.addEventListener('submit', async (e) => {
+    if (e) e.preventDefault();
+    const text = inputEl.value.trim();
+    if (!text) return;
+
+    addMessage('user', text);
+    inputEl.value = '';
+    inputEl.disabled = true;
+    sendBtn.disabled = true;
+    addTyping();
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `Request failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      if (Array.isArray(data.toolTrace)) {
+        for (const step of data.toolTrace) {
+          addMessage('tool', `⚙ called ${step.name}(${JSON.stringify(step.input)}) → ${JSON.stringify(step.result)}`);
+          
+          if (step.name === 'verify_delivery' && step.result && step.result.verified) {
+             actionPanel.style.display = 'block';
+          }
+
+          if (step.name === 'unlock_door' && step.result && step.result.success) {
+            const doorBadge = document.getElementById('door-indicator');
+            doorBadge.className = 'door-badge unlocked';
+            doorBadge.innerHTML = '🔓 Door: Unlocked';
+            
+            setTimeout(() => {
+                doorBadge.className = 'door-badge locked';
+                doorBadge.innerHTML = '🔒 Door: Locked';
+            }, 5000);
+          }
+        }
+      }
+
+      removeTyping();
+      addMessage('bot', data.reply);
+      history = data.history || history;
+    } catch (err) {
+      removeTyping();
+      addMessage('error', 'Error: ' + err.message);
+    } finally {
+      inputEl.disabled = false;
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+  });
+
+  confirmBtn.addEventListener('click', () => {
+    actionPanel.style.display = 'none';
+    inputEl.value = 'Approved, now unlocking the door';
+    sendBtn.click(); 
+  });
+
+  addMessage('bot', 'Hi, I\'m the SmartCart Access agent. Tell me about a delivery and I can verify it and unlock the door for you.');
+</script>
+
+</body>
+</html>
